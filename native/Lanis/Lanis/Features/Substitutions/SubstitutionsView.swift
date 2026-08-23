@@ -24,6 +24,7 @@ struct SubstitutionsView: View {
                 }
             }
             .navigationTitle("Vertretungen")
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button {} label: { Label("Filter", systemImage: "line.3.horizontal.decrease.circle") }

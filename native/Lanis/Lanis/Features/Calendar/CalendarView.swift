@@ -58,6 +58,7 @@ struct CalendarView: View {
                 }
             }
             .navigationTitle("Kalender")
+            .toolbarTitleDisplayMode(.inlineLarge)
             .searchable(text: $query, prompt: "Termine suchen")
             .refreshable { await load() }
         }

@@ -67,6 +67,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Mehr")
+            .toolbarTitleDisplayMode(.inlineLarge)
             .navigationDestination(for: SettingsRoute.self) { route in
                 switch route { case .moodle: MoodleView() }
             }

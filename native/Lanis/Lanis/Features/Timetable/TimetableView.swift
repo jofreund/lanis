@@ -62,25 +62,29 @@ struct TimetableView: View {
                 }
             }
             .navigationTitle("Stundenplan")
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
+                    // Only the layout toggle stays visible: the large inline title leaves room
+                    // for two items before it truncates, and this is the one used every session.
                     Button {
                         if mode == .day, let i = blockRanges.lastIndex(where: { $0.contains(day) }) { block = i }
                         mode = mode == .day ? .threeDays : .day
                     } label: {
                         Label(mode == .day ? "3 Tage" : "Ein Tag", systemImage: mode == .day ? "rectangle.split.3x1" : "rectangle")
                     }
-                    if timetable?.planForOwn != nil {
-                        Button { useOwn.toggle() } label: {
-                            Label(useOwn ? "Eigener Plan" : "Klassenplan", systemImage: useOwn ? "person" : "person.3")
-                        }
-                    }
-                    if let badge = timetable?.weekBadge, !badge.isEmpty {
-                        Button { thisWeek.toggle() } label: {
-                            Text(thisWeek ? "\(badge)-Woche" : "Nächste").font(.subheadline.weight(.semibold))
-                        }
-                    }
                     Menu {
+                        if let badge = timetable?.weekBadge, !badge.isEmpty {
+                            Button { thisWeek.toggle() } label: {
+                                Label(thisWeek ? "\(badge)-Woche" : "Nächste Woche", systemImage: "calendar")
+                            }
+                        }
+                        if timetable?.planForOwn != nil {
+                            Button { useOwn.toggle() } label: {
+                                Label(useOwn ? "Eigener Plan" : "Klassenplan", systemImage: useOwn ? "person" : "person.3")
+                            }
+                        }
+                        Divider()
                         Toggle("Ausgeblendete anzeigen", isOn: $showHidden)
                         Button("Alle wieder einblenden") { hidden = []; saveHidden() }.disabled(hidden.isEmpty)
                     } label: { Label("Mehr", systemImage: "ellipsis") }

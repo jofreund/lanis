@@ -31,6 +31,7 @@ struct LessonsView: View {
                 }
             }
             .navigationTitle("Mein Unterricht")
+            .toolbarTitleDisplayMode(.inlineLarge)
             .refreshable { await load() }
         }
         .task(id: app.dataToken) { await load(); openPendingCourse() }
