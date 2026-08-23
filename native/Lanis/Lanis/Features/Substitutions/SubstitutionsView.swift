@@ -34,7 +34,7 @@ struct SubstitutionsView: View {
             }
             .refreshable { await load() }
         }
-        .task(id: app.supportedApplets) { await load() }
+        .task(id: app.dataToken) { await load() }
     }
 
     private func planList(_ plan: SubstitutionPlan) -> some View {

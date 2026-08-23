@@ -14,9 +14,17 @@ final class AppState {
     var auth: Auth = .signedOut
     var session: LanisSession?
     var accounts: [AccountSummary] = []
-    /// PHP URLs the active session may open; empty while signed out.
+    /// PHP URLs the active session may open; empty while signed out. Seeded from the last
+    /// sign-in's cached list so the tab bar is correct on the first frame instead of showing
+    /// applets this school does not have until SPH answers.
     var supportedApplets: Set<String> = []
     var activeAccountID: Int? { if case .signedIn(let a) = auth { a.localId } else { nil } }
+    /// Bumped whenever the session is established or torn down. Applet views key their
+    /// `.task(id:)` on `dataToken`; `supportedApplets` alone no longer signals "session ready",
+    /// since it is seeded from the cache before the sign-in completes.
+    private(set) var sessionGeneration = 0
+    struct DataToken: Equatable { let generation: Int; let applets: Set<String> }
+    var dataToken: DataToken { DataToken(generation: sessionGeneration, applets: supportedApplets) }
     let snapshots: SnapshotStore
     let settings: AccountSettings
     /// User-picked course colours for the active account.
@@ -63,6 +71,12 @@ final class AppState {
         store = AccountStore(directory: root, secrets: KeychainSecretStore())
         snapshots = SnapshotStore(directory: root)
         settings = AccountSettings(directory: root)
+        if let id = AccountStore.activeID(directory: root) { supportedApplets = cachedApplets(accountID: id) }
+    }
+
+    private static let appletsKey = "supported-applets"
+    private func cachedApplets(accountID: Int) -> Set<String> {
+        Set(settings.get([String].self, accountID: accountID, key: Self.appletsKey) ?? [])
     }
 
     /// Re-authenticates the active stored account on launch.
@@ -93,8 +107,10 @@ final class AppState {
     func activate(id: Int) async {
         if let old = session { await old.deauthenticate() }
         session = nil
-        supportedApplets = []
+        // Keep the tab bar stable across the sign-in: last known list now, live list below.
+        supportedApplets = cachedApplets(accountID: id)
         auth = .signingIn
+        sessionGeneration += 1   // bump last: the token must only change on consistent state
         do {
             guard let account = try await store.clearText(id: id) else { throw LanisError.credentialsIncomplete }
             try await store.setActive(id: id)
@@ -105,9 +121,15 @@ final class AppState {
             summary.accountType = await s.accountType
             try await store.update(summary)
             accounts = await store.accounts
+            let applets = await s.supportedApplets
+            // Commit session, applet list and auth together, then bump the token — a bump while
+            // `auth` is still `.signingIn` would make applet views reload with no active account
+            // and, if the live applet list matches the cached one, never fire again.
             session = s
-            supportedApplets = await s.supportedApplets
+            supportedApplets = applets
+            settings.set(Array(applets), accountID: summary.localId, key: Self.appletsKey)
             auth = .signedIn(summary)
+            sessionGeneration += 1
             subjectColors.bind(settings: settings, accountID: summary.localId)
             showLogin = false
         } catch let e as LanisError {
@@ -129,6 +151,7 @@ final class AppState {
             self.session = nil
             supportedApplets = []
             auth = .signedOut
+            sessionGeneration += 1
             subjectColors.bind(settings: settings, accountID: nil)
         }
         try? await store.remove(id: id)

@@ -89,7 +89,7 @@ struct TimetableView: View {
                 }
             }
             .refreshable { await load() }
-            .task(id: app.supportedApplets) {
+            .task(id: app.dataToken) {
                 loadHidden(); await load()
                 if app.pendingTimetableFirstLesson { app.pendingTimetableFirstLesson = false; selected = lessons.first }
             }

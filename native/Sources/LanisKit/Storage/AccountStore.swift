@@ -20,6 +20,14 @@ public actor AccountStore {
         self.state = (try? Data(contentsOf: fileURL)).flatMap { try? JSONDecoder().decode(State.self, from: $0) } ?? State()
     }
 
+    /// Active account ID without awaiting the actor — the app needs it during synchronous
+    /// start-up (before `restore()`) to seed cached per-account state such as the applet list.
+    public nonisolated static func activeID(directory: URL) -> Int? {
+        guard let data = try? Data(contentsOf: directory.appending(path: "accounts.json")),
+              let state = try? JSONDecoder().decode(State.self, from: data) else { return nil }
+        return state.activeID
+    }
+
     public var accounts: [AccountSummary] { state.accounts }
     public var active: AccountSummary? { state.accounts.first { $0.localId == state.activeID } }
 

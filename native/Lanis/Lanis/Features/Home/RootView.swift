@@ -11,25 +11,43 @@ struct RootView: View {
 
     enum Tabs: Hashable { case substitutions, calendar, timetable, lessons, conversations, more }
 
+    /// Tab order, used both for the "first available" fallback and the applet lookup.
+    private static let order: [(tab: Tabs, meta: AppletMeta)] = [
+        (.substitutions, .substitutions), (.calendar, .calendar), (.timetable, .timetable),
+        (.lessons, .lessons), (.conversations, .conversations),
+    ]
+
+    /// Mirror the Flutter drawer: only applets SPH lists for this account get a tab.
+    /// With no known list (fresh install, signed out) every tab is shown so the shell is browsable.
+    private func shows(_ meta: AppletMeta) -> Bool {
+        app.supportedApplets.isEmpty || app.supportedApplets.contains(meta.phpURL)
+    }
+
+    /// Selection that is guaranteed to exist: if the picked tab's applet is not available for this
+    /// account, fall back to the first one that is. Derived rather than corrected in `onChange` so
+    /// an unsupported default (substitutions) is never shown, not even for one frame.
+    private var effectiveSelection: Tabs {
+        guard let current = Self.order.first(where: { $0.tab == selection }), !shows(current.meta) else { return selection }
+        return Self.order.first { shows($0.meta) }?.tab ?? .more
+    }
+
     var body: some View {
         @Bindable var app = app
-        // Mirror the Flutter drawer: only applets SPH lists for this account get a tab.
-        // While signed out every tab is shown so the shell is browsable.
-        let show = { (meta: AppletMeta) in app.session == nil || app.supportedApplets.contains(meta.phpURL) }
-        TabView(selection: $selection) {
-            if show(.substitutions) {
+        let tab = Binding(get: { effectiveSelection }, set: { selection = $0 })
+        TabView(selection: tab) {
+            if shows(.substitutions) {
                 Tab("Vertretungen", systemImage: "arrow.left.arrow.right", value: .substitutions) { SubstitutionsView() }
             }
-            if show(.calendar) {
+            if shows(.calendar) {
                 Tab("Kalender", systemImage: "calendar", value: .calendar) { CalendarView() }
             }
-            if show(.timetable) {
+            if shows(.timetable) {
                 Tab("Stundenplan", systemImage: "tablecells", value: .timetable) { TimetableView() }
             }
-            if show(.lessons) {
+            if shows(.lessons) {
                 Tab("Unterricht", systemImage: "books.vertical", value: .lessons) { LessonsView() }
             }
-            if show(.conversations) {
+            if shows(.conversations) {
                 Tab("Nachrichten", systemImage: "bubble.left.and.bubble.right", value: .conversations) {
                     PlaceholderApplet(title: "Nachrichten", symbol: "bubble.left.and.bubble.right", phase: "Phase 4")
                 }
@@ -59,13 +77,6 @@ struct RootView: View {
                 }
             }
             app.deepLink = nil
-        }
-        .onChange(of: app.supportedApplets) { _, supported in
-            // Active tab vanished (e.g. substitutions not enabled at this school) → first available.
-            let order: [(Tabs, AppletMeta)] = [(.substitutions, .substitutions), (.calendar, .calendar), (.timetable, .timetable), (.lessons, .lessons), (.conversations, .conversations)]
-            if app.session != nil, let current = order.first(where: { $0.0 == selection }), !supported.contains(current.1.phpURL) {
-                selection = order.first { supported.contains($0.1.phpURL) }?.0 ?? .more
-            }
         }
         // Account switcher only earns its space with ≥ 2 accounts; single-account users manage it in Settings.
         .tabViewBottomAccessory(isEnabled: app.accounts.count > 1) { AccountChip() }

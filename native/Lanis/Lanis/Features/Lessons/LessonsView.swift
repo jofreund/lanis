@@ -39,7 +39,7 @@ struct LessonsView: View {
             }
             .refreshable { await load() }
         }
-        .task(id: app.supportedApplets) { await load(); openPendingCourse() }
+        .task(id: app.dataToken) { await load(); openPendingCourse() }
         .onChange(of: app.pendingCourseID) { _, _ in openPendingCourse() }
     }
 

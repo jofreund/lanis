@@ -69,7 +69,7 @@ struct CalendarView: View {
         }
         // Lifecycle modifiers live on the stable NavigationStack: inside the `Group` above they
         // would be re-created (and their tasks cancelled) whenever the branch switches.
-        .task(id: app.supportedApplets) { await load() }
+        .task(id: app.dataToken) { await load() }
         .onChange(of: app.pendingCalendarFirstEvent) { _, _ in openPendingEvent() }
         .onChange(of: events.count) { _, _ in openPendingEvent() }
         .sheet(item: $selected) { EventSheet(event: $0) }
