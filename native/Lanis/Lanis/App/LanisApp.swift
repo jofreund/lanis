@@ -9,6 +9,7 @@ struct LanisApp: App {
         WindowGroup {
             RootView()
                 .environment(appState)
+                .environment(appState.subjectColors)
                 .task {
                     DebugTrace.log("app start args=\(ProcessInfo.processInfo.arguments.dropFirst().joined(separator: " "))")
                     BackgroundRefresh.register(app: appState)

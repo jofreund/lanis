@@ -57,7 +57,8 @@ struct LessonsView: View {
 
 private struct LessonRow: View {
     let lesson: Lesson
-    private var color: Color { subjectColor(lesson.name) }
+    @Environment(SubjectColors.self) private var colors
+    private var color: Color { colors.color(for: lesson.name) }
     var body: some View {
         HStack(spacing: 12) {
             Text(subjectCode(lesson.name))

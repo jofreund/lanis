@@ -19,6 +19,8 @@ final class AppState {
     var activeAccountID: Int? { if case .signedIn(let a) = auth { a.localId } else { nil } }
     let snapshots: SnapshotStore
     let settings: AccountSettings
+    /// User-picked course colours for the active account.
+    let subjectColors = SubjectColors()
     var showLogin = false
     /// Pending deep link (`lanis://common/moodle`, `lanis://common/kalender` …) consumed by `RootView`.
     var deepLink: DeepLink?
@@ -106,6 +108,7 @@ final class AppState {
             session = s
             supportedApplets = await s.supportedApplets
             auth = .signedIn(summary)
+            subjectColors.bind(settings: settings, accountID: summary.localId)
             showLogin = false
         } catch let e as LanisError {
             auth = .failed(Self.message(for: e))
@@ -126,6 +129,7 @@ final class AppState {
             self.session = nil
             supportedApplets = []
             auth = .signedOut
+            subjectColors.bind(settings: settings, accountID: nil)
         }
         try? await store.remove(id: id)
         snapshots.remove(accountID: id)

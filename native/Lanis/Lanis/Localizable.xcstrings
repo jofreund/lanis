@@ -348,6 +348,9 @@
     "Extern" : {
 
     },
+    "Farbe" : {
+
+    },
     "Fehler" : {
       "localizations" : {
         "en" : {
@@ -855,6 +858,9 @@
       }
     },
     "Zurück" : {
+
+    },
+    "Zurücksetzen" : {
 
     }
   },

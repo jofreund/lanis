@@ -329,6 +329,12 @@ private struct LessonSheet: View {
     let isHidden: Bool
     let toggleHidden: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(SubjectColors.self) private var colors
+
+    private var colorBinding: Binding<Color> {
+        Binding(get: { colors.color(for: lesson.name) },
+                set: { colors.setColor($0, for: lesson.name) })
+    }
 
     private var duration: String {
         let minutes = lesson.endTime.minutes - lesson.startTime.minutes
@@ -341,8 +347,6 @@ private struct LessonSheet: View {
             HStack(alignment: .center) {
                 Text(lesson.name ?? "–").font(.largeTitle.weight(.semibold))
                 Spacer()
-                Circle().fill(subjectColor(lesson.name)).frame(width: 28, height: 28)
-                    .overlay(Circle().strokeBorder(.white.opacity(0.6), lineWidth: 1))
                 Button {
                     toggleHidden(); dismiss()
                 } label: {
@@ -356,12 +360,27 @@ private struct LessonSheet: View {
                 detail("clock", "\(lesson.startTime.formatted) – \(lesson.endTime.formatted) (\(duration))")
                 if let t = lesson.teacher, !t.isEmpty { detail("person", t) }
                 if let b = lesson.badge, !b.isEmpty { detail("calendar", String(localized: "\(b)-Woche")) }
+                colorRow
                 if isHidden { detail("eye.slash", String(localized: "Ausgeblendet")).foregroundStyle(.secondary) }
             }
             Spacer(minLength: 0)
         }
         .padding(24)
         .padding(.top, 8)
+    }
+
+    /// Colour override for the whole subject (`D 06G1` and `D` share one entry), not just this slot.
+    private var colorRow: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "paintpalette").font(.title3).frame(width: 28)
+            Text("Farbe").font(.body.weight(.medium))
+            Spacer()
+            if colors.hasCustomColor(for: lesson.name) {
+                Button("Zurücksetzen") { colors.setColor(nil, for: lesson.name) }
+                    .font(.subheadline).buttonStyle(.borderless)
+            }
+            ColorPicker("Farbe", selection: colorBinding, supportsOpacity: false).labelsHidden()
+        }
     }
 
     private func detail(_ symbol: String, _ text: String) -> some View {
@@ -430,6 +449,7 @@ private struct ParallelSheet: View {
 /// Compact block used in the 3-day grid; sized by lesson duration.
 private struct GridLessonCell: View {
     let lesson: TimetableSubject
+    @Environment(SubjectColors.self) private var colors
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(lesson.name ?? "–").font(.caption.weight(.semibold)).lineLimit(2)
@@ -441,9 +461,9 @@ private struct GridLessonCell: View {
         .padding(6)
         .padding(.leading, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(subjectColor(lesson.name).opacity(0.22), in: .rect(cornerRadius: 8))
+        .background(colors.color(for: lesson.name).opacity(0.22), in: .rect(cornerRadius: 8))
         .overlay(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 2).fill(subjectColor(lesson.name)).frame(width: 3).padding(.vertical, 4).padding(.leading, 2)
+            RoundedRectangle(cornerRadius: 2).fill(colors.color(for: lesson.name)).frame(width: 3).padding(.vertical, 4).padding(.leading, 2)
         }
         .clipped()
     }
@@ -451,35 +471,45 @@ private struct GridLessonCell: View {
 
 private struct LessonCard: View {
     let lesson: TimetableSubject
+    @Environment(SubjectColors.self) private var colors
     var body: some View {
-        HStack(spacing: 14) {
-            VStack(spacing: 2) {
+        // The time sits in a gutter and the lesson itself is a tinted block with a solid
+        // colour bar — the same language as the 3-day grid, laid out as a row.
+        HStack(spacing: 12) {
+            VStack(spacing: 0) {
                 Text(lesson.startTime.formatted).font(.subheadline.weight(.semibold).monospacedDigit())
                 Text(lesson.endTime.formatted).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             }
             .frame(width: 54)
-            .padding(.vertical, 8)
-            .glassEffect(.regular.tint(color.opacity(0.3)), in: .rect(cornerRadius: 12))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(lesson.name ?? "–").font(.headline)
-                HStack(spacing: 12) {
-                    if let r = lesson.room, !r.isEmpty { Label(r, systemImage: "door.left.hand.open") }
-                    if let t = lesson.teacher, !t.isEmpty { Label(t, systemImage: "person") }
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(lesson.name ?? "–").font(.headline)
+                    HStack(spacing: 12) {
+                        if let r = lesson.room, !r.isEmpty { Label(r, systemImage: "door.left.hand.open") }
+                        if let t = lesson.teacher, !t.isEmpty { Label(t, systemImage: "person") }
+                    }
+                    .font(.caption).foregroundStyle(.secondary)
                 }
-                .font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                if let b = lesson.badge, !b.isEmpty {
+                    Text(b).font(.caption2.weight(.bold)).padding(.horizontal, 7).padding(.vertical, 3)
+                        .glassEffect(.regular.tint(.accentColor), in: .capsule)
+                }
+                if lesson.duration > 1 {
+                    Text("\(lesson.duration)h").font(.caption2).foregroundStyle(.secondary)
+                }
             }
-            Spacer()
-            if let b = lesson.badge, !b.isEmpty {
-                Text(b).font(.caption2.weight(.bold)).padding(.horizontal, 7).padding(.vertical, 3)
-                    .glassEffect(.regular.tint(.accentColor), in: .capsule)
+            .padding(10)
+            .padding(.leading, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(color.opacity(0.22), in: .rect(cornerRadius: 12))
+            .overlay(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 4).padding(.vertical, 6).padding(.leading, 3)
             }
-            if lesson.duration > 1 {
-                Text("\(lesson.duration)h").font(.caption2).foregroundStyle(.secondary)
-            }
+            .clipped()
         }
-        .padding(12)
-        .background(.regularMaterial, in: .rect(cornerRadius: 16))
     }
 
-    private var color: Color { subjectColor(lesson.name) }
+    private var color: Color { colors.color(for: lesson.name) }
 }
