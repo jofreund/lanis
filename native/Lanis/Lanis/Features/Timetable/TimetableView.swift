@@ -83,8 +83,6 @@ struct TimetableView: View {
                     Menu {
                         Toggle("Ausgeblendete anzeigen", isOn: $showHidden)
                         Button("Alle wieder einblenden") { hidden = []; saveHidden() }.disabled(hidden.isEmpty)
-                        Button { Task { await load() } } label: { Label("Aktualisieren", systemImage: "arrow.clockwise") }
-                            .disabled(model.loading || app.session == nil)
                     } label: { Label("Mehr", systemImage: "ellipsis") }
                 }
             }

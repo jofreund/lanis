@@ -59,12 +59,6 @@ struct CalendarView: View {
             }
             .navigationTitle("Kalender")
             .searchable(text: $query, prompt: "Termine suchen")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { Task { await load() } } label: { Label("Aktualisieren", systemImage: "arrow.clockwise") }
-                        .disabled(model.loading || app.session == nil)
-                }
-            }
             .refreshable { await load() }
         }
         // Lifecycle modifiers live on the stable NavigationStack: inside the `Group` above they

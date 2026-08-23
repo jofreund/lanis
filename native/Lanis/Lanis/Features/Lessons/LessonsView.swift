@@ -31,12 +31,6 @@ struct LessonsView: View {
                 }
             }
             .navigationTitle("Mein Unterricht")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { Task { await load() } } label: { Label("Aktualisieren", systemImage: "arrow.clockwise") }
-                        .disabled(model.loading || app.session == nil)
-                }
-            }
             .refreshable { await load() }
         }
         .task(id: app.dataToken) { await load(); openPendingCourse() }

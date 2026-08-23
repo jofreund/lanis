@@ -108,16 +108,6 @@
     "Abgelehnt" : {
 
     },
-    "Aktualisieren" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Refresh"
-          }
-        }
-      }
-    },
     "Aktuell liegen keine Einträge vor." : {
       "localizations" : {
         "en" : {

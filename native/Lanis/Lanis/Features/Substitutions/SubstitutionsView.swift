@@ -26,8 +26,6 @@ struct SubstitutionsView: View {
             .navigationTitle("Vertretungen")
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
-                    Button { Task { await load() } } label: { Label("Aktualisieren", systemImage: "arrow.clockwise") }
-                        .disabled(model.loading || app.session == nil)
                     Button {} label: { Label("Filter", systemImage: "line.3.horizontal.decrease.circle") }
                         .disabled(true) // Phase 2: port substitutions_filter_settings.dart
                 }
