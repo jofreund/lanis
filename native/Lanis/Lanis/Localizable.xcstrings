@@ -168,6 +168,9 @@
         }
       }
     },
+    "Ansicht" : {
+
+    },
     "Applets für dieses Konto" : {
       "localizations" : {
         "en" : {
@@ -536,6 +539,16 @@
         }
       }
     },
+    "KW %lld · %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "KW %1$lld · %2$@"
+          }
+        }
+      }
+    },
     "Mehr" : {
       "localizations" : {
         "en" : {
@@ -567,6 +580,9 @@
       }
     },
     "Mitteilungen erlauben" : {
+
+    },
+    "Monat" : {
 
     },
     "Moodle" : {
@@ -810,6 +826,9 @@
           }
         }
       }
+    },
+    "Woche" : {
+
     },
     "Zeitraum" : {
 

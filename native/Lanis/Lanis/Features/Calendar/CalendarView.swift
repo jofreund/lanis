@@ -6,16 +6,40 @@ struct CalendarView: View {
     @State private var model = AppletModel<[CalendarEvent]>(applet: .calendar)
     @State private var query = ""
     @State private var selected: CalendarEvent?
+    @State private var period: PeriodMode = .month
     private var events: [CalendarEvent] { model.value ?? [] }
 
-    private var upcoming: [(month: Date, events: [CalendarEvent])] {
+    enum PeriodMode: String, CaseIterable {
+        case month, week
+        var label: LocalizedStringKey { self == .month ? "Monat" : "Woche" }
+    }
+
+    /// School weeks run Mon–Sun regardless of the device locale's first weekday.
+    private static let weekCalendar: Calendar = {
+        var c = Calendar(identifier: .iso8601)
+        c.timeZone = .current
+        return c
+    }()
+    private var groupingCalendar: Calendar { period == .month ? Calendar.current : Self.weekCalendar }
+
+    private var upcoming: [(period: Date, events: [CalendarEvent])] {
         let q = query.trimmingCharacters(in: .whitespaces)
         let cutoff = Calendar.current.startOfDay(for: .now)
         let filtered = events
             .filter { q.isEmpty ? $0.endTime >= cutoff : $0.title.localizedCaseInsensitiveContains(q) || $0.description.localizedCaseInsensitiveContains(q) }
             .sorted { $0.startTime < $1.startTime }
-        let grouped = Dictionary(grouping: filtered) { Calendar.current.dateInterval(of: .month, for: $0.startTime)?.start ?? .distantPast }
+        let unit: Calendar.Component = period == .month ? .month : .weekOfYear
+        let cal = groupingCalendar
+        let grouped = Dictionary(grouping: filtered) { cal.dateInterval(of: unit, for: $0.startTime)?.start ?? .distantPast }
         return grouped.keys.sorted().map { ($0, grouped[$0]!) }
+    }
+
+    private func periodTitle(_ start: Date) -> String {
+        guard period == .week else { return start.formatted(.dateTime.month(.wide).year()) }
+        let cal = Self.weekCalendar
+        let end = cal.date(byAdding: .day, value: 6, to: start) ?? start
+        let span = "\(start.formatted(.dateTime.day().month(.abbreviated))) – \(end.formatted(.dateTime.day().month(.abbreviated)))"
+        return String(localized: "KW \(cal.component(.weekOfYear, from: start)) · \(span)")
     }
 
     var body: some View {
@@ -52,18 +76,27 @@ struct CalendarView: View {
     }
 
     private var list: some View {
-        List {
-            if model.isOffline { OfflineBanner(fetchedAt: model.fetchedAt, error: model.error).listRowBackground(Color.clear).listRowInsets(EdgeInsets()) }
-            ForEach(upcoming, id: \.month) { group in
-                Section(group.month.formatted(.dateTime.month(.wide).year())) {
-                    ForEach(group.events) { e in
-                        Button { selected = e } label: { EventRow(event: e) }.tint(.primary)
+        VStack(spacing: 0) {
+            Picker("Ansicht", selection: $period) {
+                ForEach(PeriodMode.allCases, id: \.self) { Text($0.label).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+
+            List {
+                if model.isOffline { OfflineBanner(fetchedAt: model.fetchedAt, error: model.error).listRowBackground(Color.clear).listRowInsets(EdgeInsets()) }
+                ForEach(upcoming, id: \.period) { group in
+                    Section(periodTitle(group.period)) {
+                        ForEach(group.events) { e in
+                            Button { selected = e } label: { EventRow(event: e) }.tint(.primary)
+                        }
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollEdgeEffectStyle(.soft, for: .top)
         }
-        .listStyle(.insetGrouped)
-        .scrollEdgeEffectStyle(.soft, for: .top)
     }
 
     private func load() async {
