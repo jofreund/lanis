@@ -12,6 +12,7 @@ struct TimetableView: View {
     @State private var selected: TimetableSubject?
     @State private var mode: ViewMode = .day
     @State private var selectedGroup: LessonGroup?
+    @State private var block = TimetableView.todayIndex >= 2 ? 1 : 0
     private var timetable: Timetable? { model.value }
 
     enum ViewMode: String, CaseIterable { case day, threeDays }
@@ -32,11 +33,17 @@ struct TimetableView: View {
         guard let t = timetable, index < plan.count else { return [] }
         return plan[index].filter { t.isCurrentWeek($0, sameWeek: thisWeek) && (showHidden || !hidden.contains($0.id)) }.sorted { $0.startTime < $1.startTime }
     }
-    /// The three day indices shown in 3-day mode, starting at the selected day but clamped to the week.
-    private var threeDayRange: [Int] {
+    /// The two selectable blocks in 3-day mode: the first three days of the week and the last three.
+    private var blockRanges: [[Int]] {
         guard !plan.isEmpty else { return [] }
-        let start = min(day, max(plan.count - 3, 0))
-        return Array(start..<min(start + 3, plan.count))
+        let last = max(plan.count - 3, 0)
+        let first = Array(0..<min(3, plan.count))
+        guard last > 0 else { return [first] }
+        return [first, Array(last..<plan.count)]
+    }
+    private func blockLabel(_ days: [Int]) -> String {
+        guard let f = days.first, let l = days.last else { return "" }
+        return "\(Self.dayNames[f].prefix(2))–\(Self.dayNames[l].prefix(2))"
     }
 
     var body: some View {
@@ -58,6 +65,7 @@ struct TimetableView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button {
+                        if mode == .day, let i = blockRanges.lastIndex(where: { $0.contains(day) }) { block = i }
                         mode = mode == .day ? .threeDays : .day
                     } label: {
                         Label(mode == .day ? "3 Tage" : "Ein Tag", systemImage: mode == .day ? "rectangle.split.3x1" : "rectangle")
@@ -90,9 +98,19 @@ struct TimetableView: View {
 
     private func content(_ t: Timetable) -> some View {
         VStack(spacing: 0) {
-            Picker("Tag", selection: $day) {
-                ForEach(0..<plan.count, id: \.self) { i in
-                    Text(Self.dayNames[i].prefix(2)).tag(i)
+            Group {
+                if mode == .threeDays {
+                    Picker("Zeitraum", selection: $block) {
+                        ForEach(Array(blockRanges.enumerated()), id: \.offset) { i, days in
+                            Text(blockLabel(days)).tag(i)
+                        }
+                    }
+                } else {
+                    Picker("Tag", selection: $day) {
+                        ForEach(0..<plan.count, id: \.self) { i in
+                            Text(Self.dayNames[i].prefix(2)).tag(i)
+                        }
+                    }
                 }
             }
             .pickerStyle(.segmented)
@@ -101,35 +119,27 @@ struct TimetableView: View {
 
             if model.isOffline { OfflineBanner(fetchedAt: model.fetchedAt, error: model.error).padding(.top, 8) }
             if mode == .threeDays {
-                threeDayGrid(t)
-            } else {
-            ScrollView {
-                LazyVStack(spacing: 10) {
-                    if lessons.isEmpty {
-                        ContentUnavailableView("Frei", systemImage: "sun.max", description: Text("Keine Stunden am \(Self.dayNames[day])."))
-                            .padding(.top, 40)
-                    }
-                    ForEach(lessons) { l in
-                        LessonCard(lesson: l)
-                            .opacity(hidden.contains(l.id) ? 0.45 : 1)
-                            .contentShape(.rect)
-                            .onTapGesture { selected = l }
-                            .contextMenu {
-                                if hidden.contains(l.id) {
-                                    Button { hidden.remove(l.id); saveHidden() } label: { Label("Einblenden", systemImage: "eye") }
-                                } else {
-                                    Button(role: .destructive) { hidden.insert(l.id); saveHidden() } label: { Label("Ausblenden", systemImage: "eye.slash") }
-                                }
-                            }
+                TabView(selection: $block) {
+                    ForEach(Array(blockRanges.enumerated()), id: \.offset) { i, days in
+                        threeDayGrid(t, days: days).tag(i)
                     }
                 }
-                .padding()
-                .padding(.bottom, 80)
-            }
-            .scrollEdgeEffectStyle(.soft, for: .top)
+                .tabViewStyle(.page(indexDisplayMode: .never))
+            } else {
+                TabView(selection: $day) {
+                    ForEach(0..<plan.count, id: \.self) { i in
+                        dayList(i).tag(i)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
         }
+        .onChange(of: plan.count, initial: true) { _, n in
+            if day >= n { day = max(n - 1, 0) }
+            if block >= blockRanges.count { block = max(blockRanges.count - 1, 0) }
+        }
         .sensoryFeedback(.selection, trigger: day)
+        .sensoryFeedback(.selection, trigger: block)
         .sensoryFeedback(.selection, trigger: mode)
         .sheet(item: $selected) { l in
             LessonSheet(lesson: l, isHidden: hidden.contains(l.id)) {
@@ -151,14 +161,42 @@ struct TimetableView: View {
         }
     }
 
+    private func dayList(_ index: Int) -> some View {
+        let items = lessons(for: index)
+        return ScrollView {
+            LazyVStack(spacing: 10) {
+                if items.isEmpty {
+                    ContentUnavailableView("Frei", systemImage: "sun.max", description: Text("Keine Stunden am \(Self.dayNames[index])."))
+                        .padding(.top, 40)
+                }
+                ForEach(items) { l in
+                    LessonCard(lesson: l)
+                        .opacity(hidden.contains(l.id) ? 0.45 : 1)
+                        .contentShape(.rect)
+                        .onTapGesture { selected = l }
+                        .contextMenu {
+                            if hidden.contains(l.id) {
+                                Button { hidden.remove(l.id); saveHidden() } label: { Label("Einblenden", systemImage: "eye") }
+                            } else {
+                                Button(role: .destructive) { hidden.insert(l.id); saveHidden() } label: { Label("Ausblenden", systemImage: "eye.slash") }
+                            }
+                        }
+                }
+            }
+            .padding()
+            .padding(.bottom, 80)
+        }
+        .scrollEdgeEffectStyle(.soft, for: .top)
+    }
+
     // MARK: - 3-day grid
 
     private static let hourHeight: CGFloat = 76
     private static let axisWidth: CGFloat = 36
 
-    private func threeDayGrid(_ t: Timetable) -> some View {
-        let days = threeDayRange
-        let shown = days.flatMap { lessons(for: $0) }
+    private func threeDayGrid(_ t: Timetable, days: [Int]) -> some View {
+        // Span the whole week so both blocks keep the same scale while swiping.
+        let shown = (0..<plan.count).flatMap { lessons(for: $0) }
         let slotStart = t.hours.map(\.startTime.minutes).min() ?? 8 * 60
         let slotEnd = t.hours.map(\.endTime.minutes).max() ?? 16 * 60
         let start = min(slotStart, shown.map(\.startTime.minutes).min() ?? slotStart)
