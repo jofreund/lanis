@@ -60,7 +60,13 @@
     "%lld" : {
 
     },
+    "%lld Kurse" : {
+
+    },
     "%lld neue Einträge im Vertretungsplan" : {
+
+    },
+    "%lld parallele Kurse" : {
 
     },
     "%lld Stunden" : {
@@ -85,6 +91,9 @@
           }
         }
       }
+    },
+    "3 Tage" : {
+
     },
     "Abbrechen" : {
       "localizations" : {
@@ -292,6 +301,9 @@
       }
     },
     "Eigener Plan" : {
+
+    },
+    "Ein Tag" : {
 
     },
     "Einblenden" : {

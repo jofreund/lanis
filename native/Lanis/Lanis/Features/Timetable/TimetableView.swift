@@ -10,7 +10,12 @@ struct TimetableView: View {
     @State private var hidden: Set<String> = []
     @State private var showHidden = false
     @State private var selected: TimetableSubject?
+    @State private var mode: ViewMode = .day
+    @State private var selectedGroup: LessonGroup?
     private var timetable: Timetable? { model.value }
+
+    enum ViewMode: String, CaseIterable { case day, threeDays }
+    struct LessonGroup: Identifiable { let lessons: [TimetableSubject]; var id: String { lessons.map(\.id).joined(separator: "|") } }
 
     private static var todayIndex: Int {
         let wd = Calendar.current.component(.weekday, from: .now) // 1 = Sunday
@@ -22,9 +27,16 @@ struct TimetableView: View {
         guard let t = timetable else { return [] }
         return (useOwn ? t.planForOwn : nil) ?? t.planForAll
     }
-    private var lessons: [TimetableSubject] {
-        guard let t = timetable, day < plan.count else { return [] }
-        return plan[day].filter { t.isCurrentWeek($0, sameWeek: thisWeek) && (showHidden || !hidden.contains($0.id)) }.sorted { $0.startTime < $1.startTime }
+    private var lessons: [TimetableSubject] { lessons(for: day) }
+    private func lessons(for index: Int) -> [TimetableSubject] {
+        guard let t = timetable, index < plan.count else { return [] }
+        return plan[index].filter { t.isCurrentWeek($0, sameWeek: thisWeek) && (showHidden || !hidden.contains($0.id)) }.sorted { $0.startTime < $1.startTime }
+    }
+    /// The three day indices shown in 3-day mode, starting at the selected day but clamped to the week.
+    private var threeDayRange: [Int] {
+        guard !plan.isEmpty else { return [] }
+        let start = min(day, max(plan.count - 3, 0))
+        return Array(start..<min(start + 3, plan.count))
     }
 
     var body: some View {
@@ -45,6 +57,11 @@ struct TimetableView: View {
             .navigationTitle("Stundenplan")
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
+                    Button {
+                        mode = mode == .day ? .threeDays : .day
+                    } label: {
+                        Label(mode == .day ? "3 Tage" : "Ein Tag", systemImage: mode == .day ? "rectangle.split.3x1" : "rectangle")
+                    }
                     if timetable?.planForOwn != nil {
                         Button { useOwn.toggle() } label: {
                             Label(useOwn ? "Eigener Plan" : "Klassenplan", systemImage: useOwn ? "person" : "person.3")
@@ -81,10 +98,11 @@ struct TimetableView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             .padding(.bottom, 8)
-            .glassEffect(.regular, in: .capsule)
-            .padding(.horizontal)
 
             if model.isOffline { OfflineBanner(fetchedAt: model.fetchedAt, error: model.error).padding(.top, 8) }
+            if mode == .threeDays {
+                threeDayGrid(t)
+            } else {
             ScrollView {
                 LazyVStack(spacing: 10) {
                     if lessons.isEmpty {
@@ -109,8 +127,10 @@ struct TimetableView: View {
                 .padding(.bottom, 80)
             }
             .scrollEdgeEffectStyle(.soft, for: .top)
+            }
         }
         .sensoryFeedback(.selection, trigger: day)
+        .sensoryFeedback(.selection, trigger: mode)
         .sheet(item: $selected) { l in
             LessonSheet(lesson: l, isHidden: hidden.contains(l.id)) {
                 if hidden.contains(l.id) { hidden.remove(l.id) } else { hidden.insert(l.id) }
@@ -120,6 +140,128 @@ struct TimetableView: View {
             .presentationDragIndicator(.visible)
             .presentationBackground(.regularMaterial)
         }
+        .sheet(item: $selectedGroup) { g in
+            ParallelSheet(lessons: g.lessons, hidden: hidden) { l in
+                if hidden.contains(l.id) { hidden.remove(l.id) } else { hidden.insert(l.id) }
+                saveHidden()
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(.regularMaterial)
+        }
+    }
+
+    // MARK: - 3-day grid
+
+    private static let hourHeight: CGFloat = 76
+    private static let axisWidth: CGFloat = 36
+
+    private func threeDayGrid(_ t: Timetable) -> some View {
+        let days = threeDayRange
+        let shown = days.flatMap { lessons(for: $0) }
+        let slotStart = t.hours.map(\.startTime.minutes).min() ?? 8 * 60
+        let slotEnd = t.hours.map(\.endTime.minutes).max() ?? 16 * 60
+        let start = min(slotStart, shown.map(\.startTime.minutes).min() ?? slotStart)
+        let end = max(slotEnd, shown.map(\.endTime.minutes).max() ?? slotEnd)
+        let totalHeight = CGFloat(end - start) / 60 * Self.hourHeight
+
+        return VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Spacer().frame(width: Self.axisWidth)
+                ForEach(days, id: \.self) { i in
+                    Text(Self.dayNames[i])
+                        .font(.subheadline.weight(i == Self.todayIndex ? .bold : .semibold))
+                        .foregroundStyle(i == Self.todayIndex ? Color.accentColor : .primary)
+                        .frame(maxWidth: .infinity)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.leading, 8).padding(.trailing)
+            .padding(.bottom, 6)
+
+            ScrollView {
+                HStack(alignment: .top, spacing: 6) {
+                    timeAxis(start: start, end: end)
+                    ForEach(days, id: \.self) { i in
+                        dayColumn(lessons(for: i), start: start)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(height: totalHeight)
+                .padding(.leading, 8).padding(.trailing)
+                .padding(.vertical, 8)
+                .padding(.bottom, 80)
+            }
+            .scrollEdgeEffectStyle(.soft, for: .top)
+        }
+    }
+
+    private func timeAxis(start: Int, end: Int) -> some View {
+        let firstHour = Int(ceil(Double(start) / 60))
+        let lastHour = end / 60
+        return ZStack(alignment: .topLeading) {
+            ForEach(Array(stride(from: firstHour, through: lastHour, by: 1)), id: \.self) { h in
+                Text(String(format: "%02d:00", h))
+                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                    .frame(width: Self.axisWidth, alignment: .trailing)
+                    .offset(y: CGFloat(h * 60 - start) / 60 * Self.hourHeight - 6)
+            }
+        }
+        .frame(width: Self.axisWidth, alignment: .topLeading)
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    /// A set of lessons that overlap in time (parallel courses) and are shown as one cell.
+    private struct Cluster: Identifiable {
+        let lessons: [TimetableSubject]
+        var id: String { lessons.map(\.id).joined(separator: "|") }
+        var start: TimeOfDay { lessons.map(\.startTime).min()! }
+        var end: TimeOfDay { lessons.map(\.endTime).max()! }
+    }
+    private func cluster(_ lessons: [TimetableSubject]) -> [Cluster] {
+        var out: [Cluster] = []
+        var current: [TimetableSubject] = []
+        var currentEnd = Int.min
+        for l in lessons.sorted(by: { ($0.startTime, $0.endTime) < ($1.startTime, $1.endTime) }) {
+            if l.startTime.minutes >= currentEnd, !current.isEmpty { out.append(Cluster(lessons: current)); current = [] }
+            current.append(l)
+            currentEnd = max(currentEnd, l.endTime.minutes)
+        }
+        if !current.isEmpty { out.append(Cluster(lessons: current)) }
+        return out
+    }
+
+    private func dayColumn(_ lessons: [TimetableSubject], start: Int) -> some View {
+        ZStack(alignment: .top) {
+            RoundedRectangle(cornerRadius: 12).fill(.quaternary.opacity(0.35))
+            ForEach(cluster(lessons)) { c in
+                let top = CGFloat(c.start.minutes - start) / 60 * Self.hourHeight
+                let height = max(CGFloat(c.end.minutes - c.start.minutes) / 60 * Self.hourHeight - 3, 22)
+                Group {
+                    if c.lessons.count == 1, let l = c.lessons.first {
+                        GridLessonCell(lesson: l)
+                            .opacity(hidden.contains(l.id) ? 0.45 : 1)
+                            .contentShape(.rect)
+                            .onTapGesture { selected = l }
+                            .contextMenu {
+                                if hidden.contains(l.id) {
+                                    Button { hidden.remove(l.id); saveHidden() } label: { Label("Einblenden", systemImage: "eye") }
+                                } else {
+                                    Button(role: .destructive) { hidden.insert(l.id); saveHidden() } label: { Label("Ausblenden", systemImage: "eye.slash") }
+                                }
+                            }
+                    } else {
+                        ParallelCell(lessons: c.lessons)
+                            .contentShape(.rect)
+                            .onTapGesture { selectedGroup = LessonGroup(lessons: c.lessons) }
+                    }
+                }
+                .frame(height: height)
+                .offset(y: top)
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     private func load() async {
@@ -196,6 +338,83 @@ private struct LessonSheet: View {
 private func subjectColor(_ name: String?) -> Color {
     let h = (name ?? "").unicodeScalars.reduce(7) { ($0 &* 31 &+ Int($1.value)) & 0xFFFF }
     return Color(hue: Double(h % 360) / 360, saturation: 0.65, brightness: 0.85)
+}
+
+/// Cell for several courses running in parallel (e.g. the class plan's elective groups).
+private struct ParallelCell: View {
+    let lessons: [TimetableSubject]
+    private var names: [String] {
+        var seen = Set<String>(), out: [String] = []
+        for n in lessons.compactMap(\.name) where seen.insert(n).inserted { out.append(n) }
+        return out
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Image(systemName: "square.stack.3d.up").font(.caption2)
+                Text("\(lessons.count) Kurse").font(.caption.weight(.semibold))
+            }
+            Text(names.joined(separator: ", ")).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .padding(6).padding(.leading, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.fill.secondary, in: .rect(cornerRadius: 8))
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 2).fill(.secondary).frame(width: 3).padding(.vertical, 4).padding(.leading, 2)
+        }
+        .clipped()
+    }
+}
+
+/// Lists all parallel courses; tapping one pushes its detail inside the same sheet.
+private struct ParallelSheet: View {
+    let lessons: [TimetableSubject]
+    let hidden: Set<String>
+    let toggleHidden: (TimetableSubject) -> Void
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVStack(spacing: 10) {
+                    ForEach(lessons) { l in
+                        NavigationLink(value: l) {
+                            LessonCard(lesson: l).opacity(hidden.contains(l.id) ? 0.45 : 1)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("\(lessons.count) parallele Kurse")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: TimetableSubject.self) { l in
+                LessonSheet(lesson: l, isHidden: hidden.contains(l.id)) { toggleHidden(l) }
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+    }
+}
+
+/// Compact block used in the 3-day grid; sized by lesson duration.
+private struct GridLessonCell: View {
+    let lesson: TimetableSubject
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(lesson.name ?? "–").font(.caption.weight(.semibold)).lineLimit(2)
+            if let r = lesson.room, !r.isEmpty {
+                Text(r).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(6)
+        .padding(.leading, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(subjectColor(lesson.name).opacity(0.22), in: .rect(cornerRadius: 8))
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 2).fill(subjectColor(lesson.name)).frame(width: 3).padding(.vertical, 4).padding(.leading, 2)
+        }
+        .clipped()
+    }
 }
 
 private struct LessonCard: View {
