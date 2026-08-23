@@ -2,7 +2,7 @@ import SwiftUI
 import LanisKit
 
 /// Generic applet state: snapshot-first, refresh in background, offline fallback.
-/// Port of liblanis `AppletParser.fetchData` semantics (fetching / online / offline / error).
+/// Port of liblanis@0.1.2 `AppletParser.fetchData` semantics (fetching / online / offline / error).
 @Observable @MainActor
 final class AppletModel<T: Codable & Sendable & Equatable> {
     private(set) var value: T?

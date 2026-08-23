@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Host-provided secure storage for account passwords (port of `liblanis/secret_store.dart`).
+/// Host-provided secure storage for account passwords (port of `liblanis@0.1.2 lib/src/secret_store.dart`).
 public protocol SecretStore: Sendable {
     func write(_ value: String, for key: String) throws
     func read(_ key: String) throws -> String?

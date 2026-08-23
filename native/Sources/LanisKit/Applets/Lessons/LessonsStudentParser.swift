@@ -1,7 +1,7 @@
 import Foundation
 import SwiftSoup
 
-/// Port of `liblanis/applets/lessons/student_parser.dart` (overview, detail, homework toggle).
+/// Port of `liblanis@0.1.2 lib/src/applets/lessons/student_parser.dart` (overview, detail, homework toggle).
 /// Uploads / file deletion are Phase 4 follow-ups.
 public struct LessonsStudentParser: Sendable {
     public static let meta = AppletMeta.lessons

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftSoup
 
-/// Authenticated SPH HTTP session for one account. Port of `liblanis/session/session.dart`.
+/// Authenticated SPH HTTP session for one account. Port of `liblanis@0.1.2 lib/src/session/session.dart`.
 public actor LanisSession {
     public let account: ClearTextAccount
     public let config: LanisConfig

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftSoup
 
-/// Port of `liblanis/applets/substitutions/parser.dart` (AJAX and non-AJAX paths).
+/// Port of `liblanis@0.1.2 lib/src/applets/substitutions/parser.dart` (AJAX and non-AJAX paths).
 public struct SubstitutionsParser: Sendable {
     public static let meta = AppletMeta.substitutions
 

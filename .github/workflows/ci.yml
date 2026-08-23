@@ -5,27 +5,20 @@ on:
   push:
 
 jobs:
-  analyze-and-test:
-    name: Analyze and test
-    runs-on: ubuntu-latest
+  laniskit:
+    name: LanisKit build & test
+    # LanisKit targets macOS 26; the runner image must be macOS 26 or newer.
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: native
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
+      - name: Build
+        run: swift build
 
-      - name: Install app dependencies
-        run: flutter pub get
-
-      - name: Generate l10n
-        run: dart run intl_utils:generate
-
-      - name: Analyze
-        run: flutter analyze --no-fatal-infos
-
-      - name: App unit and widget tests
-        run: flutter test
+      # LANIS_LIVE is unset, so LiveTests stay disabled and no credentials are needed.
+      - name: Test
+        run: swift test

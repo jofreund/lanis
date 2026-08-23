@@ -1,126 +1,54 @@
-# Lanis Mobile
+# Lanis — native iOS fork (personal project)
 
+A personal, unofficial fork of [Lanis Mobile](https://github.com/lanis-mobile/lanis) that rebuilds
+the app from the ground up as a native iOS app in Swift and SwiftUI.
 
-Deine App für das hessische Schulportal! In Zusammenarbeit mit dem staatlichen Schulamt für den Landkreis Groß-Gerau und den Main-Taunus-Kreis
-**Einsatz an zahlreichen Schulen in Hessen mit über 35 Tausend täglichen Nutzern.**
+**This is a hobby project for my own use.** It is not affiliated with, endorsed by, or supported by
+the Lanis Mobile team, the Staatliches Schulamt, or Schulportal Hessen. It is not published to the
+App Store and makes no promise of feature parity, stability, or continued maintenance. If you want
+the real app, use the official one — it is excellent, actively maintained, and serves tens of
+thousands of students daily:
 
-<p align="center">
-    <img src="https://github.com/alessioC42/lanis-mobile/assets/84250128/19d30436-32f7-4cbe-b78e-f2fee3583c28" width="60%">
-</p>
+- [App Store](https://apps.apple.com/de/app/lanis-mobile/id6511247743) · [Google Play](https://play.google.com/store/apps/details?id=io.github.alessioc42.sph) · [IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/io.github.alessioc42.sph) · [Website](https://lanis-mobile.github.io/)
 
-<table>
-    <tr>
-        <td colspan='2'>
-            <a href='https://play.google.com/store/apps/details?id=io.github.alessioc42.sph&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Jetzt bei Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/de_badge_web_generic.png' style='height: 71px'/></a>
-        </td>
-        <td colspan='2'>
-            <a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.alessioc42.sph"><img src="https://www.martinstoeckli.ch/images/izzy-on-droid-badge-en.png" alt="Get it on IzzyOnDroid" style="height: 56px;"></a>
-        </td>
-        <td colspan='2'>
-            <a href='https://apps.apple.com/de/app/lanis-mobile/id6511247743?l=en-GB'><img alt='Jetzt im App Store' src='https://lanis-mobile.github.io/assets/ios-badge.svg' style='height: 61px'/></a>
-        </td>
-    </tr>
-    <tr>
-        <td colspan='3'>
-            <a href='https://lanis-mobile.github.io/'>website</a>
-        </td>
-        <td colspan='3'>
-            <a href='https://discord.gg/MGYaSetUsY'>discord</a>
-        </td>
-    </tr>
-</table>
+Per upstream's request to fork authors, this build uses its own bundle identifier
+(`com.jofreund.lanis-fork`) so it can never collide with the published apps.
 
-<p></p>
-<details>
-  <summary>Screenshots</summary>
-<div style="text-align: center;">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01.png" width="250" >
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/02.png" width="250" >
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/03.png" width="250" >
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04.png" width="250" >
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/05.png" width="250" >
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/06.png" width="250" >
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/07.png" width="250" >
+## Credit
 
-</div>
-</details>
+All of the hard work — years of reverse-engineering Schulportal Hessen, the login handshake and
+crypto, and every HTML parser — belongs to the upstream Lanis Mobile project and its contributors:
 
-## Mitarbeit
-Dieses Projekt ist stark von Bug-Reports anderer Schulen oder von neuen Mitarbeitern abhängig. Der Grund dafür liegt in
-der modularen Natur des Schulportals, die es äußerst schwierig macht, eine universelle Lanis-App zu entwickeln.
+- **[Alessio Caputo (@alessioC42)](https://github.com/alessioC42)** — creator and principal author
+- **[@kurwjan](https://github.com/kurwjan)**, **[@Rajala1404](https://github.com/Rajala1404)**,
+  **[@Vito0912](https://github.com/Vito0912)**, **[@CodeSpoof](https://github.com/CodeSpoof)** — major contributors
+- and [everyone else who contributed](https://github.com/lanis-mobile/lanis/graphs/contributors)
 
-Scheue dich nicht, einen Bug-Report zu erstellen, wenn du einen Fehler findest. Wir sind immer offen für neue Mitarbeiter/Schüler, die mit uns arbeiten, um die App zu verbessern.
+This fork rewrites their work in a different language. It does not reverse-engineer anything new:
+the Dart sources are the specification, and each Swift file names the upstream file and release it
+was ported from. Any bug here is mine; anything that works is theirs.
 
-Bug-Reports können auch an <a href="mailto:lanis-mobile@alessioc42.dev">diese</a> E-Mail-Adresse gesendet werden, falls kein Github-Konto vorhanden ist.
+## What this fork contains
 
-## Get started with development
-### 1. [Setup Flutter](https://docs.flutter.dev/get-started/quick) with your favourite IDE (Android Studio / VScode recommended)
-
-### 2. Generate the code 
-*You do not need to do this, if you cloned the repository freshly, since we have this checked into source control*
-```shell
-dart run build_runner build # Database
-dart run intl_utils:generate # Localisations
 ```
-### 3. Development
-Note the flags here:
-#### `--dart-define=cronetHttpNoPlay=true`
-**[Partially optional]**
-This flag is used to include the Cronet binary for networking on non-Play-Services-enabled devices (we also ship this version on the Play Store)
-
-If you are currently using the default Android emulator image, consider using an AOSP image instead, as these tend to perform much better than versions with Play Services enabled.
-
-On iOS builds this flag is not required.
-
-#### `--dart-define=ANSI=true` 
-**[Optional]**
-This flag allows the application's logs to be colorized, which can help a lot if you are not already using your IDE's log-filtering tools. (Recommended to omit on macOS due to lack of support in the default Terminal)
-
-```shell
-flutter run --dart-define=cronetHttpNoPlay=true --dart-define=ANSI=true
+native/          LanisKit (platform-neutral SPH client) + the SwiftUI iOS app
+docs/native/     REBUILD_PLAN.md — architecture, phases, risks
 ```
 
-### 4. Production
-For actual release mode signing is required, which can be added via placing the respective `key.properties` and `local.properties` in the `android` directory. On iOS the Development team has to be changed in Xcode. 
+The Flutter app and its Android target were removed from this fork — they keep shipping from
+upstream, which is wired up here as the `origin` remote. See [`native/README.md`](native/README.md)
+for build instructions and current status, and
+[`docs/native/REBUILD_PLAN.md`](docs/native/REBUILD_PLAN.md) for the plan.
 
-If you are producing a build that you intend to distribute to other people, please consider changing the app ID from `io.github.alessioc42.sph` to `io.github.alessioc42.sph.<fork|dev>.<YOUR_NAME>` or any other name that is different from the original app ID. This will prevent conflicts with the store versions that we are publishing.
+## Upstream as specification
 
-```shell
-flutter build <apk|aab|ipa> --release --dart-define=cronetHttpNoPlay=true
-```
+The Dart sources remain the spec for every port — see the "Upstream reference" section in
+[`native/README.md`](native/README.md).
 
-An alternative is the interactive `build.py` script, which can build Android and/or iOS in one run, copy artifacts into `artifacts/`, and optionally upload to App Store Connect / Google Play:
+- [`lanis-mobile/liblanis`](https://github.com/lanis-mobile/liblanis) — session, crypto, applet parsers
+- [`lanis-mobile/lanis`](https://github.com/lanis-mobile/lanis) — the Flutter app (`origin`)
 
-```shell
-python3 build.py
-# or non-interactive:
-python3 build.py --android --ios --skip-upgrade --yes
-```
+## Licence
 
-#### Store uploads (optional)
-
-`build.py` loads secrets from gitignored `.env` / `.build.env` in the repo root (real environment variables win). Example:
-
-```env
-ASC_API_KEY_ID=XXXXXXXXXX
-ASC_API_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-ASC_API_KEY_PATH=/path/to/AuthKey_XXXXXXXXXX.p8
-PLAY_SERVICE_ACCOUNT_JSON=/path/to/service-account.json
-```
-
-Extra file: `python3 build.py --env-file /path/to/secrets.env`.
-
-For Play uploads, install the optional Python deps and use a Google Cloud service account that has been invited in Play Console (Users and permissions) with permission to manage tracks:
-
-```shell
-pip install -r requirements-build.txt
-python3 build.py --android --upload-android --play-track internal --yes
-```
-
-For App Store Connect uploads (macOS + Xcode), create an App Store Connect API key, put the values in `.env` (or export them), then:
-
-```shell
-python3 build.py --ios --upload-ios --yes
-```
-
-Uploads deliver the binary only (TestFlight / Play track). They do not submit for App Review or promote a production rollout.
+GPL-3.0, inherited from upstream. The Swift port is a derivative work of GPL-3.0 code and remains
+GPL-3.0. Copyright for the original work stays with the Lanis Mobile authors; see [`LICENSE`](LICENSE).

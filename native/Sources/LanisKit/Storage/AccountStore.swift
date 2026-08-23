@@ -2,7 +2,7 @@ import Foundation
 
 /// Multi-account registry: summaries in a JSON file, passwords in the `SecretStore`.
 /// (Plan Phase 2 names SwiftData; a Codable file keeps LanisKit UI-framework-free and
-/// is trivially migratable later. Port of liblanis `accounts` table + Riverpod registry.)
+/// is trivially migratable later. Port of liblanis@0.1.2 `accounts` table + Riverpod registry.)
 public actor AccountStore {
     public struct State: Codable, Sendable {
         public var accounts: [AccountSummary] = []

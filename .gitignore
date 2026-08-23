@@ -1,76 +1,25 @@
-worker/node_modules
-app/node_modules/
-app/*.map
-app/.DS_Store
 .DS_Store
-app/.sourcemaps
-app/dist/
-.idea/*
-.idea/libraries/Dart_Packages.xml
-.idea/workspace.xml
-
-# Miscellaneous
-*.class
 *.log
-*.pyc
 *.swp
-.DS_Store
-.atom/
+
+# Swift Package Manager
 .build/
-.buildlog/
-.history
-.svn/
 .swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-/build/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-/android/app/.cxx
-/pubspec.lock
-artifacts
-artifacts/*
-
-generated/
-
-# Local SPH credentials for fixture recording only (never used by tests/CI)
+# Local SPH credentials for live tests (LANIS_LIVE=1) — never in CI
 .credentials.env
 *.credentials.env
 
-# Local store upload secrets for build.py
-.env
-.build.env
-
-# FVM Version Cache
-.fvm/
-# FVM Version file
-.fvmrc
+# IDEs
+.idea/
+*.iml

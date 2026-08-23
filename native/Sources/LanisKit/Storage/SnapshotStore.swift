@@ -1,6 +1,6 @@
 import Foundation
 
-/// Per-account, per-applet JSON snapshots (port of liblanis `applet_offline_data`).
+/// Per-account, per-applet JSON snapshots (port of liblanis@0.1.2 `applet_offline_data`).
 /// Views show the snapshot immediately, then refresh; on failure they fall back to it.
 public struct SnapshotStore: Sendable {
     public struct Snapshot<T: Codable & Sendable>: Sendable {
@@ -38,7 +38,7 @@ public struct SnapshotStore: Sendable {
     }
 }
 
-/// Per-account key/value settings (port of liblanis `account_settings`), JSON on disk.
+/// Per-account key/value settings (port of liblanis@0.1.2 `account_settings`), JSON on disk.
 public final class AccountSettings: @unchecked Sendable {
     private let fileURL: URL
     private var values: [String: [String: String]]   // accountID → key → JSON string

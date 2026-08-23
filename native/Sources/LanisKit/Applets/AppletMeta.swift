@@ -1,6 +1,6 @@
 import Foundation
 
-/// Applet identity + defaults (port of `liblanis/applets/definition.dart`).
+/// Applet identity + defaults (port of `liblanis@0.1.2 lib/src/applets/definition.dart`).
 public struct AppletMeta: Sendable, Hashable, Identifiable {
     public var id: String { phpURL }
     public let phpURL: String

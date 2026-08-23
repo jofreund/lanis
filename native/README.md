@@ -10,6 +10,28 @@ native/
 └── Lanis/                 iOS app (Xcode 27, iOS 26.1+ deployment target, Mac Catalyst enabled, Liquid Glass)
 ```
 
+## Upstream reference
+
+The Dart sources are the spec for every port. Two upstream repos, both GPL-3.0 (as is this fork):
+
+- [`lanis-mobile/liblanis`](https://github.com/lanis-mobile/liblanis) — session, crypto and all applet parsers. This is the one that matters.
+- [`lanis-mobile/lanis`](https://github.com/lanis-mobile/lanis) — the Flutter app, already wired up here as the `origin` remote.
+
+Each ported type carries its provenance in the doc comment, pinned to the liblanis release it was
+read from:
+
+```swift
+/// Port of `liblanis@0.1.2 lib/src/applets/timetable/parser.dart` (student timetable).
+```
+
+When SPH changes its HTML and upstream fixes a parser, the pin tells you exactly what to diff:
+
+```
+git -C ../liblanis log v0.1.2..main -- lib/src/applets/timetable/parser.dart
+```
+
+Bump the pin in the doc comment whenever you re-sync a port against a newer liblanis.
+
 ## Build & test
 
 ```bash

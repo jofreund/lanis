@@ -4,7 +4,7 @@ import Security
 import CommonCrypto
 
 /// Lanis RSA handshake + OpenSSL-compatible AES-256-CBC for SPH payloads.
-/// Port of `liblanis/session/cryptor.dart`. Pure value type; the handshake
+/// Port of `liblanis@0.1.2 lib/src/session/cryptor.dart`. Pure value type; the handshake
 /// itself lives in `LanisSession` because it needs the cookie session.
 public struct SPHCryptor: Sendable {
     public static let passphraseSize = 46

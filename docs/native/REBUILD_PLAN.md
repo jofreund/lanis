@@ -4,7 +4,8 @@ Status: **Step 1 done; Phase 2 + first Phase 3 applet started** in `native/`. Ev
 
 ## 0. What we are rebuilding
 
-The Flutter app (`lib/`, ~26k lines) is a thin UI over **`liblanis`** (pub package, ~8.4k lines of pure Dart):
+The Flutter app (~26k lines) is a thin UI over **`liblanis`** (pub package, ~8.4k lines of pure Dart).
+Neither lives in this fork any more — both are read from upstream ([`lanis-mobile/lanis`](https://github.com/lanis-mobile/lanis), the `origin` remote, and [`lanis-mobile/liblanis`](https://github.com/lanis-mobile/liblanis)). Paths below refer to those repos:
 
 | Layer | Flutter today | Size | Native equivalent |
 |---|---|---|---|
@@ -20,7 +21,7 @@ The Dart sources are the **spec**: every parser has a one‑to‑one Swift port,
 ## 1. Goals & non‑goals
 
 - Goals: native look/feel on iOS 26/27 (Liquid Glass, `Tab`/`TabView` minimize‑on‑scroll, search tab role, glass toolbars, `NavigationSplitView` on iPad), instant launch, Swift 6 strict concurrency, offline snapshots, feature parity with the Flutter iOS build.
-- Non‑goals (for now): Android (Flutter app keeps shipping there from `main`), macOS Catalyst (possible later since `LanisKit` is platform‑neutral), widgets/Live Activities (Phase 7 stretch).
+- Non‑goals (for now): Android (the Flutter app keeps shipping there from upstream `main`; this fork is native‑only), macOS Catalyst (possible later since `LanisKit` is platform‑neutral), widgets/Live Activities (Phase 7 stretch).
 
 ## 2. Target architecture
 

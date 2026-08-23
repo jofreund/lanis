@@ -1,6 +1,6 @@
 import Foundation
 
-/// Port of `liblanis/applets/calendar/parser.dart` + `CalendarEvent.fromLanisJson`.
+/// Port of `liblanis@0.1.2 lib/src/applets/calendar/parser.dart` + `CalendarEvent.fromLanisJson`.
 public struct CalendarParser: Sendable {
     public static let meta = AppletMeta.calendar
     public init() {}

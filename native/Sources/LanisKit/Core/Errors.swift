@@ -1,6 +1,6 @@
 import Foundation
 
-/// Typed SPH / client errors. Mirrors `liblanis/exceptions.dart`.
+/// Typed SPH / client errors. Mirrors `liblanis@0.1.2 lib/src/exceptions.dart`.
 /// Messages are developer-facing English; the app maps cases to localized strings.
 public enum LanisError: Error, Sendable, Equatable {
     case wrongCredentials

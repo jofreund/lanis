@@ -1,7 +1,7 @@
 import Foundation
 import SwiftSoup
 
-/// Port of `liblanis/applets/timetable/parser.dart` (student timetable).
+/// Port of `liblanis@0.1.2 lib/src/applets/timetable/parser.dart` (student timetable).
 public struct TimetableParser: Sendable {
     public static let meta = AppletMeta.timetable
     public init() {}
