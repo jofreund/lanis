@@ -334,12 +334,6 @@ private struct LessonSheet: View {
     }
 }
 
-/// Stable per-subject hue, like the Flutter `color_hash.dart`.
-private func subjectColor(_ name: String?) -> Color {
-    let h = (name ?? "").unicodeScalars.reduce(7) { ($0 &* 31 &+ Int($1.value)) & 0xFFFF }
-    return Color(hue: Double(h % 360) / 360, saturation: 0.65, brightness: 0.85)
-}
-
 /// Cell for several courses running in parallel (e.g. the class plan's elective groups).
 private struct ParallelCell: View {
     let lessons: [TimetableSubject]

@@ -57,27 +57,36 @@ struct LessonsView: View {
 
 private struct LessonRow: View {
     let lesson: Lesson
+    private var color: Color { subjectColor(lesson.name) }
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(lesson.name).font(.headline)
-                Spacer()
-                if let hw = lesson.currentEntry?.homework, !hw.done {
-                    Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
+        HStack(spacing: 12) {
+            Text(subjectCode(lesson.name))
+                .font(.subheadline.weight(.bold))
+                .minimumScaleFactor(0.6).lineLimit(1)
+                .foregroundStyle(color.mix(with: .primary, by: 0.45))
+                .frame(width: 42, height: 42)
+                .background(color.opacity(0.22), in: .rect(cornerRadius: 11))
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(lesson.name).font(.headline)
+                    Spacer()
+                    if let hw = lesson.currentEntry?.homework, !hw.done {
+                        Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
+                    }
                 }
-            }
-            if let e = lesson.currentEntry {
-                HStack(spacing: 6) {
-                    if let d = e.topicDate { Text(d, format: .dateTime.day().month()).foregroundStyle(.secondary) }
-                    Text(e.topicTitle ?? "–").lineLimit(1)
+                if let e = lesson.currentEntry {
+                    HStack(spacing: 6) {
+                        if let d = e.topicDate { Text(d, format: .dateTime.day().month()).foregroundStyle(.secondary) }
+                        Text(e.topicTitle ?? "–").lineLimit(1)
+                    }
+                    .font(.subheadline)
                 }
-                .font(.subheadline)
+                HStack(spacing: 10) {
+                    ForEach(lesson.teachers, id: \.self) { t in Label(t.kuerzel ?? "", systemImage: "person") }
+                    if let f = lesson.currentEntry?.files.count, f > 0 { Label("\(f)", systemImage: "paperclip") }
+                }
+                .font(.caption).foregroundStyle(.secondary)
             }
-            HStack(spacing: 10) {
-                ForEach(lesson.teachers, id: \.self) { t in Label(t.kuerzel ?? "", systemImage: "person") }
-                if let f = lesson.currentEntry?.files.count, f > 0 { Label("\(f)", systemImage: "paperclip") }
-            }
-            .font(.caption).foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
     }
@@ -89,10 +98,19 @@ struct CourseDetailView: View {
     @State private var detail: DetailedLesson?
     @State private var error: String?
     @State private var section: Section = .history
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     enum Section: String, CaseIterable, Identifiable {
         case history = "Verlauf", marks = "Leistungen", exams = "Leistungskontrollen", attendance = "Anwesenheit"
         var id: String { rawValue }
+        var symbol: String {
+            switch self {
+            case .history: "clock.arrow.circlepath"
+            case .marks: "chart.bar"
+            case .exams: "checkmark.seal"
+            case .attendance: "person.crop.circle.badge.checkmark"
+            }
+        }
         /// Deep-link segment names (`lanis://student/lessons/<id>/exams`).
         init?(slug: String) {
             switch slug { case "history": self = .history; case "marks": self = .marks; case "exams": self = .exams; case "attendance": self = .attendance; default: return nil }
@@ -103,8 +121,16 @@ struct CourseDetailView: View {
         Group {
             if let detail {
                 VStack(spacing: 0) {
+                    // "Leistungskontrollen" doesn't fit a quarter of a phone width, so compact widths
+                    // show icons (full names stay as accessibility labels); regular widths show text.
                     Picker("Bereich", selection: $section) {
-                        ForEach(Section.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(Section.allCases) { s in
+                            if sizeClass == .compact {
+                                Image(systemName: s.symbol).accessibilityLabel(s.rawValue).tag(s)
+                            } else {
+                                Text(s.rawValue).tag(s)
+                            }
+                        }
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal).padding(.bottom, 8)
@@ -306,8 +332,11 @@ private struct HistoryRow: View {
                 if let h = entry.schoolHours { Text("· \(h) Std").font(.subheadline).foregroundStyle(.secondary) }
                 Spacer()
                 if let p = entry.presence {
-                    Text(p).font(.caption2.weight(.semibold)).padding(.horizontal, 6).padding(.vertical, 2)
-                        .glassEffect(.regular.tint(p.lowercased().contains("anwesend") ? .green : .red).interactive(false), in: .capsule)
+                    let tint: Color = p.lowercased().contains("anwesend") ? .green : .red
+                    Text(p).font(.caption.weight(.semibold))
+                        .foregroundStyle(tint.mix(with: .primary, by: 0.35))
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(tint.opacity(0.16), in: .capsule)
                 }
             }
             if let t = entry.topicTitle { Text(t).font(.body.weight(.medium)) }
