@@ -194,7 +194,7 @@ struct TimetableView: View {
     // MARK: - 3-day grid
 
     private static let hourHeight: CGFloat = 76
-    private static let axisWidth: CGFloat = 36
+    private static let axisWidth: CGFloat = 42
 
     private func threeDayGrid(_ t: Timetable, days: [Int]) -> some View {
         // Span the whole week so both blocks keep the same scale while swiping.
@@ -222,7 +222,7 @@ struct TimetableView: View {
 
             ScrollView {
                 HStack(alignment: .top, spacing: 6) {
-                    timeAxis(start: start, end: end)
+                    timeAxis(t, start: start, end: end)
                     ForEach(days, id: \.self) { i in
                         dayColumn(lessons(for: i), start: start)
                             .frame(maxWidth: .infinity)
@@ -237,7 +237,31 @@ struct TimetableView: View {
         }
     }
 
-    private func timeAxis(start: Int, end: Int) -> some View {
+    /// Left-hand axis: the school's periods ("1.", "2.", …) like the day view, falling back
+    /// to clock hours only when the plan came without a period table.
+    private func timeAxis(_ t: Timetable, start: Int, end: Int) -> some View {
+        ZStack(alignment: .topLeading) {
+            if t.hours.isEmpty {
+                clockAxis(start: start, end: end)
+            } else {
+                ForEach(t.hours, id: \.self) { h in
+                    let top = CGFloat(h.startTime.minutes - start) / 60 * Self.hourHeight
+                    let height = CGFloat(h.endTime.minutes - h.startTime.minutes) / 60 * Self.hourHeight
+                    VStack(spacing: 1) {
+                        Text(h.label).font(.caption.weight(.semibold))
+                        Text(h.startTime.formatted).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                    .frame(width: Self.axisWidth, height: max(height - 3, 16))
+                    .offset(y: top)
+                }
+            }
+        }
+        .frame(width: Self.axisWidth, alignment: .topLeading)
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func clockAxis(start: Int, end: Int) -> some View {
         let firstHour = Int(ceil(Double(start) / 60))
         let lastHour = end / 60
         return ZStack(alignment: .topLeading) {
