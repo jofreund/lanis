@@ -12,7 +12,9 @@ enum BackgroundRefresh {
 
     @MainActor
     static func register(app: AppState) {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: taskID, using: nil) { task in
+        // The launch handler inherits this function's @MainActor isolation, so it must run on
+        // the main queue — with `using: nil` the runtime isolation check traps (SIGTRAP).
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: taskID, using: .main) { task in
             guard let task = task as? BGAppRefreshTask else { return }
             let work = Task { @MainActor in
                 let changed = await run(app: app)
