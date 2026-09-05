@@ -153,7 +153,7 @@ struct TimetableView: View {
             .presentationBackground(.regularMaterial)
         }
         .sheet(item: $selectedGroup) { g in
-            ParallelSheet(lessons: g.lessons, hidden: hidden) { l in
+            ParallelSheet(lessons: g.lessons, hidden: hidden, period: periodLabel) { l in
                 if hidden.contains(l.id) { hidden.remove(l.id) } else { hidden.insert(l.id) }
                 saveHidden()
             }
@@ -172,7 +172,7 @@ struct TimetableView: View {
                         .padding(.top, 40)
                 }
                 ForEach(items) { l in
-                    LessonCard(lesson: l)
+                    LessonCard(lesson: l, period: periodLabel(l))
                         .opacity(hidden.contains(l.id) ? 0.45 : 1)
                         .contentShape(.rect)
                         .onTapGesture { selected = l }
@@ -244,11 +244,11 @@ struct TimetableView: View {
             if t.hours.isEmpty {
                 clockAxis(start: start, end: end)
             } else {
-                ForEach(t.hours, id: \.self) { h in
+                ForEach(Array(t.hours.enumerated()), id: \.element) { i, h in
                     let top = CGFloat(h.startTime.minutes - start) / 60 * Self.hourHeight
                     let height = CGFloat(h.endTime.minutes - h.startTime.minutes) / 60 * Self.hourHeight
                     VStack(spacing: 1) {
-                        Text(h.label).font(.caption.weight(.semibold))
+                        Text(Self.periodNumber(h, ordinal: i + 1)).font(.caption.weight(.semibold))
                         Text(h.startTime.formatted).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
                     }
                     .lineLimit(1).minimumScaleFactor(0.6)
@@ -259,6 +259,25 @@ struct TimetableView: View {
         }
         .frame(width: Self.axisWidth, alignment: .topLeading)
         .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    /// Schools name their rows freely ("erste Stunde", "7. Stunde/Mittagspause"); none of that
+    /// fits the axis, so it shows just the period number — the school's own when the label
+    /// starts with one, otherwise the row's position in the hour table.
+    private static func periodNumber(_ h: TimetableRow, ordinal: Int) -> String {
+        let digits = h.label.prefix { $0.isNumber }
+        return "\(digits.isEmpty ? String(ordinal) : String(digits))."
+    }
+
+    /// The period(s) a lesson occupies, "3." or "3.–4.", for the day view's gutter. Nil when
+    /// the plan has no hour table, so the card falls back to clock times.
+    private func periodLabel(_ l: TimetableSubject) -> String? {
+        guard let hours = timetable?.hours, !hours.isEmpty else { return nil }
+        let numbers = hours.enumerated()
+            .filter { $0.element.startTime < l.endTime && $0.element.endTime > l.startTime }
+            .map { Self.periodNumber($0.element, ordinal: $0.offset + 1) }
+        guard let first = numbers.first else { return nil }
+        return numbers.count == 1 ? first : "\(first)–\(numbers.last!)"
     }
 
     private func clockAxis(start: Int, end: Int) -> some View {
@@ -448,6 +467,7 @@ private struct ParallelCell: View {
 private struct ParallelSheet: View {
     let lessons: [TimetableSubject]
     let hidden: Set<String>
+    let period: (TimetableSubject) -> String?
     let toggleHidden: (TimetableSubject) -> Void
     var body: some View {
         NavigationStack {
@@ -455,7 +475,7 @@ private struct ParallelSheet: View {
                 LazyVStack(spacing: 10) {
                     ForEach(lessons) { l in
                         NavigationLink(value: l) {
-                            LessonCard(lesson: l).opacity(hidden.contains(l.id) ? 0.45 : 1)
+                            LessonCard(lesson: l, period: period(l)).opacity(hidden.contains(l.id) ? 0.45 : 1)
                         }
                         .buttonStyle(.plain)
                     }
@@ -497,15 +517,23 @@ private struct GridLessonCell: View {
 
 private struct LessonCard: View {
     let lesson: TimetableSubject
+    /// "3." / "3.–4." from the plan's hour table; nil shows start and end time instead.
+    var period: String? = nil
     @Environment(SubjectColors.self) private var colors
     var body: some View {
-        // The time sits in a gutter and the lesson itself is a tinted block with a solid
-        // colour bar — the same language as the 3-day grid, laid out as a row.
+        // The gutter reads like the 3-day grid's axis — period number over start time — and
+        // the lesson itself is a tinted block with a solid colour bar, laid out as a row.
         HStack(spacing: 12) {
-            VStack(spacing: 0) {
-                Text(lesson.startTime.formatted).font(.subheadline.weight(.semibold).monospacedDigit())
-                Text(lesson.endTime.formatted).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            VStack(spacing: 1) {
+                if let period {
+                    Text(period).font(.subheadline.weight(.semibold))
+                    Text(lesson.startTime.formatted).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                } else {
+                    Text(lesson.startTime.formatted).font(.subheadline.weight(.semibold).monospacedDigit())
+                    Text(lesson.endTime.formatted).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
             }
+            .lineLimit(1).minimumScaleFactor(0.7)
             .frame(width: 54)
 
             HStack(spacing: 12) {
